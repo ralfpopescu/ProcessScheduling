@@ -57,7 +57,7 @@ static void schedule(unsigned int cpu_id)
     pcb_t* processToSchedule = rqHead;
     
     if(processToSchedule == NULL){
-        context_switch(cpu_id, NULL, -1);
+        //context_switch(cpu_id, NULL, -1);
     } else {
     processToSchedule->state = PROCESS_RUNNING;
     removeHead();
@@ -114,13 +114,13 @@ extern void idle(unsigned int cpu_id)
  */
 extern void preempt(unsigned int cpu_id)
 {
-    
+    /*
     pthread_mutex_lock(&current_mutex);
     pcb_t* processToPutBack = current[cpu_id]; //current process to put back in rq
     processToPutBack->state = PROCESS_READY;
     pthread_mutex_unlock(&current_mutex);
     addTail(processToPutBack); //put back in ready queue
-    schedule(cpu_id);
+    schedule(cpu_id);*/
 }
 
 
@@ -175,8 +175,9 @@ extern void terminate(unsigned int cpu_id)
 extern void wake_up(pcb_t *process)
 {
     /* FIX ME */
-    addTail(process);
     process->state = PROCESS_READY;
+    addTail(process);
+    
 }
 
 
@@ -209,6 +210,7 @@ static void addTail(pcb_t* toAdd){
         
     }
     pthread_mutex_unlock(&qutex);
+    pthread_cond_broadcast(&cpu_running);
 }
 
 
@@ -244,9 +246,10 @@ int main(int argc, char *argv[])
 
 
 
-    
+    rqHead = NULL;
     current = malloc(sizeof(pcb_t*) * cpu_count);
     assert(current != NULL);
+
     pthread_mutex_init(&current_mutex, NULL);
     pthread_mutex_init(&qutex, NULL);
     pthread_cond_init(&cpu_running, NULL);
