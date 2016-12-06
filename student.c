@@ -31,11 +31,14 @@ static pthread_mutex_t current_mutex; //for current process
 static pthread_mutex_t qutex; //for ready queue
 static pthread_cond_t cpu_running;
 static pcb_t* rqHead;
-static int mode;
+static int mode; // mode = 1 for round robin, mode = 2 for priority
 static int timeSlice;
 
 static void addTail(pcb_t* toAdd);
 static void removeHead();
+static pcb_t* getHighestPriority();
+
+int cpu_count;
 
 /*
  * schedule() is your CPU scheduler.  It should perform the following tasks:
@@ -62,9 +65,13 @@ static void schedule(unsigned int cpu_id)
     if(processToSchedule == NULL){
         //context_switch(cpu_id, NULL, -1);
     } else {
+    if(mode == 2){
+    processToSchedule = getHighestPriority();
+    processToSchedule->state = PROCESS_RUNNING;
+    } else {
     processToSchedule->state = PROCESS_RUNNING;
     removeHead();
-    
+        }
     }
     
     pthread_mutex_lock(&current_mutex);
@@ -181,8 +188,44 @@ extern void terminate(unsigned int cpu_id)
 extern void wake_up(pcb_t *process)
 {
     /* FIX ME */
+    if(mode != 2) {
     process->state = PROCESS_READY;
     addTail(process);
+    } else {
+
+    process->state = PROCESS_READY;
+    addTail(process);
+
+    pthread_mutex_lock(&current_mutex);
+    int lowPriority = 11;
+    int chosenCpu;
+    pcb_t* cpu;
+    int foundIdle = 0;
+    int i = 0;
+
+    while(i < cpu_count && foundIdle != 1){
+        cpu = current[i];
+        if(cpu == NULL){
+            foundIdle = 1;
+            chosenCpu = 0;
+        } else {
+            int priority = cpu->static_priority;
+            if(priority < lowPriority){
+                lowPriority = priority;
+                chosenCpu = i;
+            }
+        }
+        i++;
+    } // end while, chosenCpu is cpu to preempt
+    if(foundIdle != 1){
+        if(process->static_priority > lowPriority){
+            force_preempt(chosenCpu);
+        }
+    }
+    
+    pthread_mutex_unlock(&current_mutex);
+    
+    } // end else
     
 }
 
@@ -219,6 +262,49 @@ static void addTail(pcb_t* toAdd){
     pthread_cond_broadcast(&cpu_running);
 }
 
+static pcb_t* getHighestPriority(){
+
+    pthread_mutex_lock(&qutex);
+    pcb_t* high_pcb = rqHead;
+    pcb_t* current = rqHead;
+
+    if(current == NULL){
+        return NULL;
+    }
+    
+    int high = rqHead->static_priority;
+    pcb_t* prev;
+
+    while(current->next != NULL){
+        int next_priority = current->next->static_priority;
+
+        if(next_priority > high) {
+            high = next_priority;
+            high_pcb = current->next;
+            prev = current;         
+        }
+        current = current->next;
+    }
+    if(high_pcb->next == NULL){
+        if(high_pcb == rqHead){
+            pthread_mutex_unlock(&qutex);
+            return high_pcb;
+        }
+        prev->next = NULL;
+        pthread_mutex_unlock(&qutex);
+        return high_pcb;
+    }
+    if(high_pcb == rqHead){
+        rqHead = rqHead->next;
+        pthread_mutex_unlock(&qutex);
+        return high_pcb;
+    }
+    
+    prev->next = high_pcb->next;
+    pthread_mutex_unlock(&qutex);
+    return high_pcb;
+}
+
 
 
 /*
@@ -227,7 +313,7 @@ static void addTail(pcb_t* toAdd){
  */
 int main(int argc, char *argv[])
 {
-    int cpu_count;
+    //int cpu_count;
 
     /* Parse command-line arguments */
     /*
