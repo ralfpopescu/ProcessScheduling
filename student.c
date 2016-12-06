@@ -120,13 +120,13 @@ extern void idle(unsigned int cpu_id)
  */
 extern void preempt(unsigned int cpu_id)
 {
-    /*
+    
     pthread_mutex_lock(&current_mutex);
     pcb_t* processToPutBack = current[cpu_id]; //current process to put back in rq
     processToPutBack->state = PROCESS_READY;
     pthread_mutex_unlock(&current_mutex);
     addTail(processToPutBack); //put back in ready queue
-    schedule(cpu_id);*/
+    schedule(cpu_id);
 }
 
 
@@ -230,6 +230,7 @@ int main(int argc, char *argv[])
     int cpu_count;
 
     /* Parse command-line arguments */
+    /*
     if (argc != 2)
     {
         fprintf(stderr, "CS 2200 Project 5 Fall 2016 -- Multithreaded OS Simulator\n"
@@ -239,6 +240,7 @@ int main(int argc, char *argv[])
             "         -p : Static Priority Scheduler\n\n");
         return -1;
     }
+    */
     cpu_count = atoi(argv[1]);
 
     /* FIX ME - Add support for -r and -p parameters*/
@@ -249,17 +251,12 @@ int main(int argc, char *argv[])
     /* Allocate the current[] array and its mutex */
     /*********** TODO *************/
 
-    for(int i = 0; i < argc; i++){
-        char[] arg = argv[i];
-        if(strcmp(arg, "-r")){
-            mode = 1;
-            timeSlice = arg[i+1];
-            break;
-        }
-        if(strcmp(arg, "-p")){
-            mode = 2;
-            break;
-        }
+    if(argc == 4){
+        mode = 1;
+        timeSlice = atoi(argv[3]);
+    }
+    if(argc == 3){
+        mode = 2;
     }
 
 
