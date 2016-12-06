@@ -148,8 +148,7 @@ extern void yield(unsigned int cpu_id)
 {
     
     pthread_mutex_lock(&current_mutex);
-    pcb_t* current_process = current[cpu_id];
-    current_process->state = PROCESS_WAITING;
+    current[cpu_id]->state = PROCESS_WAITING;
     pthread_mutex_unlock(&current_mutex);
     schedule(cpu_id);
 }
@@ -163,8 +162,7 @@ extern void yield(unsigned int cpu_id)
 extern void terminate(unsigned int cpu_id)
 {
     pthread_mutex_lock(&current_mutex);
-    pcb_t* terminating_process = current[cpu_id];
-    terminating_process->state = PROCESS_TERMINATED;
+    current[cpu_id]->state = PROCESS_TERMINATED;
     pthread_mutex_unlock(&current_mutex);
     schedule(cpu_id);
 }
@@ -193,10 +191,10 @@ extern void wake_up(pcb_t *process)
     addTail(process);
     } else {
 
+    pthread_mutex_lock(&current_mutex);
     process->state = PROCESS_READY;
     addTail(process);
 
-    pthread_mutex_lock(&current_mutex);
     int lowPriority = 11;
     int chosenCpu;
     pcb_t* cpu;
@@ -219,6 +217,7 @@ extern void wake_up(pcb_t *process)
     } // end while, chosenCpu is cpu to preempt
     if(foundIdle != 1){
         if(process->static_priority > lowPriority){
+            pthread_mutex_unlock(&current_mutex);
             force_preempt(chosenCpu);
         }
     }
@@ -287,6 +286,7 @@ static pcb_t* getHighestPriority(){
     }
     if(high_pcb->next == NULL){
         if(high_pcb == rqHead){
+            rqHead = NULL;
             pthread_mutex_unlock(&qutex);
             return high_pcb;
         }
