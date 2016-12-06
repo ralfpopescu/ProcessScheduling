@@ -1,20 +1,47 @@
 CS 2200 Fall 2016
 Project 5
-Name:
-GT Number:
+Name: Ralf Popescu
+GT Number: 902803578
 
 Problem 1B
 ----------
 
 /* Fix me */
+1 processor: 67.6 s
+2 processors: 35.8 s
+4 processors: 33.4 s
+
+There is a significantly less drastic difference between 2 and 4 processors than 1 and 2. This indicates the relationship is certainly not linear. This is because of the diminishing returns of adding more processors to a system, highlighted by Amdahl's law. We are still bound by the processes that have to be sequentially executed on a CPU and can not be parallelized by multiple cores. 
 
 Problem 2B
 ----------
 
 /* Fix me */
+800 ms = 325.4 s
+600 ms = 314.5 s
+400 ms = 298.8 s
+200 ms = 285.2 s
+
+Context switching has some cost to it in real life. Switching too often based on a shorter time slice may incur a lot of these costs and cause throughput to be diminished. Too long and you lose the appeal of round robin, as it slowly becomes closer to FIFO. Finding a balance is important.
+
 
 Problem 3B
 ----------
 
-/* Fix me */
+./os-sim 1
+Total wait time: 67.6
+Total time spent in ready state: 389.9
+
+
+./os-sim 1 -r 5
+Total wait time: 67.7
+Total time spent in ready state: 302.6
+
+
+./os-sim 1 -p
+Total wait time: 68.8
+Total time spent in ready state: 137.1
+
+
+Our intuition tells us that static priority is the closest to shortest job first. This makes sense because it is the only algorithm out of the 3 that does not choose a process to run pseudo-arbitrarily, and chooses one based on some metric. Shortest-job first is basically a priority algorithm where we assign higher priorities to shorter jobs, so they are similar by comparison.
 
