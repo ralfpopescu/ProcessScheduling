@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "os-sim.h"
 
@@ -30,6 +31,8 @@ static pthread_mutex_t current_mutex; //for current process
 static pthread_mutex_t qutex; //for ready queue
 static pthread_cond_t cpu_running;
 static pcb_t* rqHead;
+static int mode;
+static int timeSlice;
 
 static void addTail(pcb_t* toAdd);
 static void removeHead();
@@ -67,8 +70,11 @@ static void schedule(unsigned int cpu_id)
     pthread_mutex_lock(&current_mutex);
     current[cpu_id] = processToSchedule;
     pthread_mutex_unlock(&current_mutex);
-    
+    if(mode == 1){
+        context_switch(cpu_id, processToSchedule, timeSlice);
+    } else {
     context_switch(cpu_id, processToSchedule, -1);
+    }
     
 }
 
@@ -243,7 +249,18 @@ int main(int argc, char *argv[])
     /* Allocate the current[] array and its mutex */
     /*********** TODO *************/
 
-
+    for(int i = 0; i < argc; i++){
+        char[] arg = argv[i];
+        if(strcmp(arg, "-r")){
+            mode = 1;
+            timeSlice = arg[i+1];
+            break;
+        }
+        if(strcmp(arg, "-p")){
+            mode = 2;
+            break;
+        }
+    }
 
 
     rqHead = NULL;
